@@ -4,6 +4,8 @@ from flask_cors import CORS
 # DST5CHR001O - мы не закупаем
 sids = ['DSC5BTC065J', 'DSC5KIT025A', 'DSC5KIT100U', 'DSC5NVL005A', 'DST5NVL001O', 'DSC5RNT100U', 'DSC5LSA100U', 'DSC5ZEL065J', 'DSC5KII065F', 'DSC5NVY065F', 'DSC5NPA100U', 'DSC5OSN065F', 'DSC5SLF100U', 'DSC5YAI065F', 'DSC5CHR100U']
 delivery_price_sids = {'DSC5BTC065J': 8464, 'DSC5KIT025A': 1550, 'DSC5KIT100U': 1911, 'DSC5NVL005A': 1225, 'DST5NVL001O': 1225, 'DSC5RNT100U': 3759, 'DSC5LSA100U': 5181, 'DSC5ZEL065J': 7449, 'DSC5KII065F': 3467, 'DSC5NVY065F': 5729, 'DSC5NPA100U': 5100, 'DSC5OSN065F': 8464, 'DSC5SLF100U': 3069, 'DSC5YAI065F': 7094, 'DSC5CHR100U': 5040}
+# при автовывозе T = 0 
+delivery_and_shipment_days = {'DSC5BTC065J': {'delivery': 11, 'shipment': 30}, 'DSC5KIT025A': {'delivery': 0, 'shipment': 0}, 'DSC5KIT100U': {'delivery': 2, 'shipment': 0}}
 session = requests.Session()
 base_url = "https://uat.spx.spimex.com"
 
@@ -178,9 +180,7 @@ def get_monthly_avg_price_by_tool():
 # пункт 3
 def purchase_for_1_month():
     vol = 1000  # константа - 1000 тонн
-    ks = 1 # пока что константа
-    trades = {}
-    trades_data = get_last_price_with_delivery()
+    ks = 1
     hist_close = {}
     hist_close_data = get_hist_close_vwap_with_delivery()
     for i in hist_close_data:
@@ -193,73 +193,50 @@ def purchase_for_1_month():
         else:
             hist_close[date].append(vwap_with_delivery)
 
-    sorted_hist_close_data_by_date = dict(sorted(hist_close.items()))
-    sorted_hist_close_items = list(sorted_hist_close_data_by_date.items())  # отсортированный список из кортежей (дата, [цены])
-    
-    for j in trades_data:
-        date_time = j.get("TRD_TIME")
-        date = date_time[:10]
-        last_with_delivery = j.get("LAST_WITH_DELIVERY")
-        if last_with_delivery == None:
-            continue
-        if date not in trades:
-            trades[date] = [last_with_delivery]
-        else:
-            trades[date].append(last_with_delivery)
+    sorted_data_by_date = dict(sorted(hist_close.items()))
+    sorted_items = list(sorted_data_by_date.items()) # отсортированный список из кортежей (дата, [цены])
 
-    sorted_trades_data_by_date = dict(sorted(trades.items()))
-    #sorted_trades_items = list(sorted_trades_data_by_date.items())  
-
-    
-    # имитация закупки раз в неделю (4 раза в месяц)
+    # имитация закупки раз в неделю (4 раза за месяц)
     # начинаем с 10 дня, т.к нужен sma10
-    purchase_volume = 0  # объём закупки за месяц
+    purchase_volume = 0 # объём закупки за месяц
     counter = 0
-    buy_for_month = 4
-    SMA10 = 10
-    # 20 августа
-    for j in range(10, len(sorted_hist_close_items), 7):
-        if counter >= buy_for_month:
+    for j in range(10, len(sorted_items), 7):
+        if counter >= 4:
             break
         # sma10 для текущего дня
         # j - текущий индекс дня для которого мы производим закупку
-        last_10_items = sorted_hist_close_items[-SMA10:]  # массив данных за 10 дней до текущей покупки
+        last_10_items = sorted_items[-10:]  # массив данных за 10 дней до текущей покупки
+        print(last_10_items)
         prices_of_last_10_days = []
-
         for date, items in last_10_items:
             prices_of_last_10_days.extend(items)
         sma10 = sum(prices_of_last_10_days) / len(prices_of_last_10_days)
-        
 
-        current_date = sorted_hist_close_items[j][0] # берем дату из списка кортежей (дата, [цены])
-        if current_date in sorted_trades_data_by_date:
-            last_prices_of_current_day = sorted_trades_data_by_date[current_date] # Самая последняя завершенная сделка её цена
-            x = min(last_prices_of_current_day) 
-            print(f"x: {x}, sma10: {sma10}")
+        prices_of_current_day = sorted_items[j][1]
+        x = min(prices_of_current_day)
+        print(f"x: {x}, sma10: {sma10}")
 
-            
-            # имитация покупки
-            # x ниже sma10 на 2% или более
-            if x <= sma10 * 0.98:
-                purchase = vol * 0.35 * ks
-            # x в пределах +- 1% от sma10
-            elif sma10 * 0.99 <= x <= sma10 * 1.01:
-                purchase = vol * 0.25 * ks
-            # выше на 2%
-            elif x > sma10 * 1.02:
-                purchase = vol * 0.15 * ks
-            # не закупаем
-            else:
-                purchase = 0
-            purchase_volume += purchase
-            counter += 1
-            print(f"Было закуплено {purchase} тонн за {counter} неделю")
-            print(f"SMA10: {sma10}")
-    print(f"\nОбщиий объём закупки за месяц: {purchase_volume} тонн")    
-    return purchase_volume
+        # имитация покупки
+        # x ниже sma10 на 2% или более
+        if x <= sma10 * 0.98:
+            purchase = vol * 0.35 * ks
+        # x в пределах +- 1% от sma10
+        elif sma10 * 0.99 <= x <= sma10 * 1.01:
+            purchase = vol * 0.25 * ks
+        # выше на 2%
+        elif x > sma10 * 1.02:
+            purchase = vol * 0.15 * ks
+        # не закупаем
+        else:
+            purchase = 0
+        purchase_volume += purchase
+        counter += 1
+        print(f"Было закуплено {purchase} тонн за {counter} неделю")
+        print(f"SMA10: {sma10}")
+    print(f"\nОбщиий объём закупки за месяц: {purchase_volume} тонн")
+    return purchase_volume, sma10
 
-# purchase_for_1_month()
-
+purchase_for_1_month()
 
 
 @app.route("/api/purchase_volume")

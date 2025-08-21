@@ -1,0 +1,15 @@
+services:
+  back:
+    build:
+      context: ./back
+    ports:
+      - "5000:5000"
+
+  front:
+    build:
+      context: ./front
+    ports:
+      - "3000:3000"
+    depends_on:
+      - back
+
