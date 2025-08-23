@@ -10,7 +10,6 @@ function App() {
     const [monthlyPriceByTool, setMonthlyPriceByTool] = useState(null);
     const [tableData, setTableData] = useState(null);
     
-    // Используем useRef для хранения предыдущих данных
     const previousTableData = useRef(null);
 
     const fetchTableData = async () => {
@@ -18,7 +17,6 @@ function App() {
             const response = await fetch(`${process.env.REACT_APP_API_URL}/api/table`);
             const newData = await response.json();
             
-            // Сравниваем новые данные с предыдущими
             if (JSON.stringify(newData) !== JSON.stringify(previousTableData.current)) {
                 setTableData(newData);
                 previousTableData.current = newData;
@@ -29,6 +27,13 @@ function App() {
         } catch (error) {
             console.error('Error fetching table data:', error);
         }
+    };
+
+    // Функция для форматирования чисел с двумя знаками после запятой
+    const formatNumber = (value) => {
+        if (value === null || value === undefined) return '';
+        const num = parseFloat(value);
+        return isNaN(num) ? value : num.toFixed(2);
     };
 
     useEffect(() => {
@@ -62,10 +67,7 @@ function App() {
         // Первоначальная загрузка данных таблицы
         fetchTableData();
 
-        // Устанавливаем интервал для периодической проверки
-        const intervalId = setInterval(fetchTableData, 10000); // 10 секунд
-
-        // Очистка интервала при размонтировании компонента
+        const intervalId = setInterval(fetchTableData, 10000);
         return () => clearInterval(intervalId);
     }, []);
 
@@ -86,7 +88,7 @@ function App() {
                                 <th>Текущая</th>
                                 <th>Текущая с доставкой</th>
                                 <th>Время доставки с отгрузкой</th>
-                                <th>Текущая с доставкой P</th>
+                                <th>X текущая</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -94,13 +96,13 @@ function App() {
                                 <tr key={index}>
                                     <td>{row.SID}</td>
                                     <td>{row.HIST_CLOSE_DATE}</td>
-                                    <td>{row.X_pred_dnya}</td>
-                                    <td>{row.X_pred_10_dney}</td>
-                                    <td>{row.X_pred_20_dney}</td>
-                                    <td>{row.Tekuschaya}</td>
-                                    <td>{row.Tekuschaya_s_dostavkoy}</td>
+                                    <td>{formatNumber(row.X_pred_dnya)}</td>
+                                    <td>{formatNumber(row.X_pred_10_dney)}</td>
+                                    <td>{formatNumber(row.X_pred_20_dney)}</td>
+                                    <td>{formatNumber(row.Tekuschaya)}</td>
+                                    <td>{formatNumber(row.Tekuschaya_s_dostavkoy)}</td>
                                     <td>{row.Vremya_dostavki_s_otgruzkoy}</td>
-                                    <td>{row.Tekuschaya_s_dostavkoy_P}</td>
+                                    <td>{formatNumber(row.Tekuschaya_s_dostavkoy_P)}</td>
                                 </tr>
                             ))}
                         </tbody>
