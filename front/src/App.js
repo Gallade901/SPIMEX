@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 function App() {
@@ -8,6 +8,28 @@ function App() {
     const [monthlyPrice, setMonthlyPrice] = useState(null);
     const [minnAvg, setMinnAvg] = useState(null);
     const [monthlyPriceByTool, setMonthlyPriceByTool] = useState(null);
+    const [tableData, setTableData] = useState(null);
+    
+    // Используем useRef для хранения предыдущих данных
+    const previousTableData = useRef(null);
+
+    const fetchTableData = async () => {
+        try {
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/table`);
+            const newData = await response.json();
+            
+            // Сравниваем новые данные с предыдущими
+            if (JSON.stringify(newData) !== JSON.stringify(previousTableData.current)) {
+                setTableData(newData);
+                previousTableData.current = newData;
+                console.log('Данные обновлены');
+            } else {
+                console.log('Данные не изменились');
+            }
+        } catch (error) {
+            console.error('Error fetching table data:', error);
+        }
+    };
 
     useEffect(() => {
         // Fetch Purchase Volume
@@ -36,29 +58,56 @@ function App() {
                 setMonthlyPriceByTool(data.monthly_price);
             })
             .catch(error => console.error('Error fetching monthly average price by tool:', error));
+
+        // Первоначальная загрузка данных таблицы
+        fetchTableData();
+
+        // Устанавливаем интервал для периодической проверки
+        const intervalId = setInterval(fetchTableData, 10000); // 10 секунд
+
+        // Очистка интервала при размонтировании компонента
+        return () => clearInterval(intervalId);
     }, []);
 
     return (
         <div className="App">
             <h1>SPIMEX Data</h1>
             <div className="data-section">
-                <h2>Purchase Volume (Task 3)</h2>
-                <p>{purchaseVolume !== null ? `Total Purchase Volume for the month: ${purchaseVolume.toFixed(2)} tons` : 'Loading...'}</p>
-                <p>{sma10 !== null ? `SMA10: ${sma10.toFixed(2)}` : 'Loading...'}</p>
-            </div>
-            <div className="data-section">
-                <h2>Monthly Average Price (Task 2.1)</h2>
-                <h3>Daily Average Prices:</h3>
-                <pre>{dailyPrices ? JSON.stringify(dailyPrices, null, 2) : 'Loading...'}</pre>
-                <h3>Monthly Average Price:</h3>
-                <pre>{monthlyPrice ? JSON.stringify(monthlyPrice, null, 2) : 'Loading...'}</pre>
-            </div>
-            <div className="data-section">
-                <h2>Monthly Average Price by Tool (Task 2.2)</h2>
-                <h3>Min Average Prices:</h3>
-                <pre>{minnAvg ? JSON.stringify(minnAvg, null, 2) : 'Loading...'}</pre>
-                <h3>Monthly Average Price by Tool:</h3>
-                <pre>{monthlyPriceByTool ? JSON.stringify(monthlyPriceByTool, null, 2) : 'Loading...'}</pre>
+                <h2>Table Data</h2>
+                {tableData ? (
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SID</th>
+                                <th>Дата</th>
+                                <th>X пред</th>
+                                <th>X пред 10</th>
+                                <th>X пред 20</th>
+                                <th>Текущая</th>
+                                <th>Текущая с доставкой</th>
+                                <th>Время доставки с отгрузкой</th>
+                                <th>Текущая с доставкой P</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tableData.map((row, index) => (
+                                <tr key={index}>
+                                    <td>{row.SID}</td>
+                                    <td>{row.HIST_CLOSE_DATE}</td>
+                                    <td>{row.X_pred_dnya}</td>
+                                    <td>{row.X_pred_10_dney}</td>
+                                    <td>{row.X_pred_20_dney}</td>
+                                    <td>{row.Tekuschaya}</td>
+                                    <td>{row.Tekuschaya_s_dostavkoy}</td>
+                                    <td>{row.Vremya_dostavki_s_otgruzkoy}</td>
+                                    <td>{row.Tekuschaya_s_dostavkoy_P}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : (
+                    'Loading...'
+                )}
             </div>
         </div>
     );

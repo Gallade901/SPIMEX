@@ -1,5 +1,0 @@
-requests
-pandas
-xlsxwriter
-flask
-flask-cors
