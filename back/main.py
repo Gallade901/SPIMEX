@@ -142,13 +142,15 @@ def get_hist_close_prices_with_X_fixed():
                 # список из значений hist_vwap за последние 10 торговых дней
                 prev_10 = [v.get("HIST_VWAP") for v in values[i-10:i] if v.get("HIST_VWAP") is not None]
                 if prev_10:
-                    X_10 = min(prev_10) * (1 + P * T) + delivery_price
+                    X_10 = sum(prev_10) / (len(prev_10)) * (1 + P * T) + delivery_price
+                    # X_10 = min(prev_10) * (1 + P * T) + delivery_price
                     #print(f"[{sid}: {date}], prev_10: {prev_10}, min: {min(prev_10)}, T: {T}, delivery_price: {delivery_price}, X_10: {X_10}")
             if i >= 20:
                 # список из значений hist_vwap за последние 20 торговых дней
                 prev_20 = [v.get("HIST_VWAP") for v in values[i-20:i] if v.get("HIST_VWAP") is not None]
                 if prev_20:
-                    X_20 = min(prev_20) * (1 + P * T) + delivery_price
+                    X_20 = sum(prev_20) / (len(prev_20)) * (1 + P * T) + delivery_price
+                    # X_20 = min(prev_20) * (1 + P * T) + delivery_price
                     #print(f"[{sid}: {date}], prev_20: {prev_20}, min: {min(prev_20)}, T: {T}, delivery_price: {delivery_price}, X_20: {X_20}")
             result.append({
                 "SID": sid,
