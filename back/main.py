@@ -133,8 +133,11 @@ def get_hist_close_prices_with_X_fixed():
                 delivery = delivery_and_shipment_days.get(sid, {}).get("delivery", 0)
                 shipment = delivery_and_shipment_days.get(sid, {}).get("shipment", 0)
             T = delivery + shipment
+            
             if hist_vwap is not None:
                 X_of_prev_day = hist_vwap * (1 + P * T) + delivery_price
+            else:
+                continue
             # получаем X_10 и X_20 на основе предыдущих 10 и 20 дней
             X_10 = None
             X_20 = None
@@ -143,15 +146,11 @@ def get_hist_close_prices_with_X_fixed():
                 prev_10 = [v.get("HIST_VWAP") for v in values[i-10:i] if v.get("HIST_VWAP") is not None]
                 if prev_10:
                     X_10 = sum(prev_10) / (len(prev_10)) * (1 + P * T) + delivery_price
-                    # X_10 = min(prev_10) * (1 + P * T) + delivery_price
-                    #print(f"[{sid}: {date}], prev_10: {prev_10}, min: {min(prev_10)}, T: {T}, delivery_price: {delivery_price}, X_10: {X_10}")
             if i >= 20:
                 # список из значений hist_vwap за последние 20 торговых дней
                 prev_20 = [v.get("HIST_VWAP") for v in values[i-20:i] if v.get("HIST_VWAP") is not None]
                 if prev_20:
                     X_20 = sum(prev_20) / (len(prev_20)) * (1 + P * T) + delivery_price
-                    # X_20 = min(prev_20) * (1 + P * T) + delivery_price
-                    #print(f"[{sid}: {date}], prev_20: {prev_20}, min: {min(prev_20)}, T: {T}, delivery_price: {delivery_price}, X_20: {X_20}")
             result.append({
                 "SID": sid,
                 "HIST_CLOSE_DATE": date,
@@ -191,8 +190,6 @@ def get_trades():
                     prices[sid] = last_price
     return prices
     
-print(get_trades())
-
 
 def get_last_price_with_delivery():
     authorize()
@@ -207,8 +204,6 @@ def get_last_price_with_delivery():
                 "LAST_WITH_DELIVERY": last_price + delivery_price
             })
     return result
-
-print(get_last_price_with_delivery())
 
 # пункт 2.1
 def get_monthly_avg_price():
@@ -241,11 +236,6 @@ def get_monthly_avg_price():
         monthly_avg[month] = sum(monthly_avg[month]) / len(monthly_avg[month])
     
     return daily_avg, monthly_avg
-
-
-# daily_prices, monthly_price = get_monthly_avg_price()
-# print(daily_prices)
-# print(monthly_price)
 
 
 # пункт 2.2
@@ -284,11 +274,6 @@ def get_monthly_avg_price_by_tool():
     return minn_avg, monthly_avg
 
 
-# minn_avg, monthly_price = get_monthly_avg_price_by_tool()
-# print(minn_avg)
-# print(monthly_price)
-
-
 # пункт 3
 def purchase_for_1_month():
     vol = 1000  # константа - 1000 тонн
@@ -320,7 +305,6 @@ def purchase_for_1_month():
         # sma10 для текущего дня
         # j - текущий индекс дня для которого мы производим закупку
         last_10_items = sorted_items[-10:]  # массив данных за 10 дней до текущей покупки
-        # print(last_10_items)
         prices_of_last_10_days = []
         for date, items in last_10_items:
             prices_of_last_10_days.extend(items)
@@ -351,32 +335,39 @@ def purchase_for_1_month():
     print(f"\nОбщиий объём закупки за месяц: {purchase_volume} тонн")
     return purchase_volume, sma10
 
-a, b = purchase_for_1_month()
-
 
 def info_for_excel_table():
     hist_data_list = get_hist_close_prices_with_X_fixed()
-    hist_data_by_sid = {}
-    for item in hist_data_list:
-        sid = item["SID"]
-        if sid not in hist_data_by_sid:
-            hist_data_by_sid[sid] = []
-        hist_data_by_sid[sid].append(item)
     result = []
-    for sid, hist_days in hist_data_by_sid.items():
-        for day in hist_days:
-            result.append({
-                "SID": sid,
-                "Дата": day["HIST_CLOSE_DATE"],
-                "HIST_VWAP": day["HIST_VWAP"],
-                "HIST_VWAP_WITH_DELIVERY": day["HIST_VWAP_WITH_DELIVERY"],
-                "X_10": day["X_10"],
-                "X_20": day["X_20"],
-                "Vremya_dostavki_s_otgruzkoy": day["T"]
-            })
-    df = pd.DataFrame(result)
-    df.to_excel("hist_close_data.xlsx", index=False)
-    return df
+    hist_date = {}
+    for day in hist_data_list:
+        if day["HIST_CLOSE_DATE"] in hist_date:
+            hist_date[day["HIST_CLOSE_DATE"]].append(day)
+        else:
+            hist_date[day["HIST_CLOSE_DATE"]] = [day]
+    sid_count_summ = {}
+    for day in hist_date:
+        sorted_by_price_X =  sorted(hist_date[day], key=lambda x: x['X_of_prev_day'])
+        d = 0
+        for i in range(len(sorted_by_price_X)):
+            sorted_by_price_X[i]["rating"] = 15 - d
+            d += 1        
+            if sorted_by_price_X[i]["SID"] in sid_count_summ:
+                sid_count_summ[sorted_by_price_X[i]["SID"]]["count"] += 1
+                sid_count_summ[sorted_by_price_X[i]["SID"]]["summ"] += sorted_by_price_X[i]["rating"]
+            else:
+                sid_count_summ[sorted_by_price_X[i]["SID"]] = {"count": 1, "summ": sorted_by_price_X[i]["rating"]}
+
+        result.extend(sorted_by_price_X)
+
+    print(sid_count_summ)
+    # sid_count_summ = [{"s":1}]
+    df1 = pd.DataFrame(result)
+    df2 = pd.DataFrame(sid_count_summ)
+    with pd.ExcelWriter('hist_close_data.xlsx') as writer:
+        df1.to_excel(writer, sheet_name='top', index=False)
+        df2.to_excel(writer, sheet_name='final', index=False)
+
 
 info_for_excel_table()
 
