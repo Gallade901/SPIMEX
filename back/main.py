@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 from flask import Flask, jsonify
 from flask_cors import CORS
+from datetime import datetime, timedelta
 # DST5CHR001O - мы не закупаем
 sids = ['DSC5BTC065J', 'DSC5KIT025A', 'DSC5KIT100U', 'DSC5NVL005A', 'DST5NVL001O', 'DSC5RNT100U', 'DSC5LSA100U', 'DSC5ZEL065J', 'DSC5KII065F', 'DSC5NVY065F', 'DSC5NPA100U', 'DSC5OSN065F', 'DSC5SLF100U', 'DSC5YAI065F', 'DSC5CHR100U']
 delivery_price_sids = {'DSC5BTC065J': 8464, 'DSC5KIT025A': 1550, 'DSC5KIT100U': 1911, 'DSC5NVL005A': 1225, 'DST5NVL001O': 1225, 'DSC5RNT100U': 3759, 'DSC5LSA100U': 5181, 'DSC5ZEL065J': 7449, 'DSC5KII065F': 3467, 'DSC5NVY065F': 5729, 'DSC5NPA100U': 5100, 'DSC5OSN065F': 8464, 'DSC5SLF100U': 3069, 'DSC5YAI065F': 7094, 'DSC5CHR100U': 5040}
@@ -357,10 +358,13 @@ def info_for_excel_table():
                 sid_count_summ[sorted_by_price_X[i]["SID"]]["summ"] += sorted_by_price_X[i]["rating"]
             else:
                 sid_count_summ[sorted_by_price_X[i]["SID"]] = {"count": 1, "summ": sorted_by_price_X[i]["rating"]}
-
+            new_date = sorted_by_price_X[i]["HIST_CLOSE_DATE"].split("-")[1]
+            date_obj = datetime.strptime(sorted_by_price_X[i]["HIST_CLOSE_DATE"], "%Y-%m-%d")
+            new_date = date_obj + timedelta(days=sorted_by_price_X[i]["T"])
+            sorted_by_price_X[i]["data_30"] = new_date
         result.extend(sorted_by_price_X)
-
-    print(sid_count_summ)
+    
+    
     # sid_count_summ = [{"s":1}]
     df1 = pd.DataFrame(result)
     df2 = pd.DataFrame(sid_count_summ)
