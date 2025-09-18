@@ -3,3 +3,4 @@ pandas
 xlsxwriter
 flask
 flask-cors
+curl_cffi

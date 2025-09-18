@@ -23,7 +23,7 @@ def get_usd_rub_rate(start_date="2024-09-14", end_date="2025-09-14"):
 print(get_usd_rub_rate())
 
 # котировки из Роттердама - MGO, VLSFO, LSMGO
-def get_bunker_prices(oil_types):
+def get_bunker_prices(oil_types=['MGO', 'VLSFO', 'LSMGO']):
     base_url = "https://shipandbunker.com/a/.json"
     try:
         payload = {
@@ -64,8 +64,8 @@ def get_bunker_prices(oil_types):
         return None
     return result
 
-oil_types = ['MGO', 'VLSFO', 'LSMGO']
-print(get_bunker_prices(oil_types))
+# oil_types = ['MGO', 'VLSFO', 'LSMGO']
+# print(get_bunker_prices(oil_types))
 
 
 # показатели для вычета акциза за несколько лет
@@ -101,7 +101,7 @@ def get_data_from_table():
             month: (val if val else None) for month, val in zip(months, values)
         }
     return results
-print(get_data_from_table())
+# print(get_data_from_table())
 
 def calculate_sma(period, hist_close_data):
     hist_close = {}

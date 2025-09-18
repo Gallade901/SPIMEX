@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 from base_data import authorize, get_hist_close, get_trades
+from new_data import get_data_from_table, get_bunker_prices
 
 # DST5CHR001O - мы не закупаем
 sids = ['DSC5BTC065J', 'DSC5KIT025A', 'DSC5KIT100U', 'DSC5NVL005A', 'DST5NVL001O', 'DSC5RNT100U', 'DSC5LSA100U', 'DSC5ZEL065J', 'DSC5KII065F', 'DSC5NVY065F', 'DSC5NPA100U', 'DSC5OSN065F', 'DSC5SLF100U', 'DSC5YAI065F', 'DSC5CHR100U']
@@ -182,7 +183,14 @@ def data_table():
         })
     sorted_res = sorted(result, key=lambda i: i.get("Tekuschaya_s_dostavkoy_P"))
     return jsonify(sorted_res)
-      
+
+@app.route("/api/quotes")
+def quotes():
+    return get_bunker_prices()
+
+@app.route("/api/graph")
+def graph():
+    return get_data_from_table()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

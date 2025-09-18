@@ -1,0 +1,27 @@
+.App-header {
+    background-color: #3498db;
+    padding: 20px;
+    color: white;
+    border-radius: 20px;
+}
+
+.App-header nav ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.App-header nav ul li {
+    margin: 0 15px;
+}
+
+.App-header nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.2em;
+}
+
+.App-header nav ul li a:hover {
+    text-decoration: underline;
+}
