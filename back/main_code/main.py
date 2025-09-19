@@ -190,7 +190,7 @@ def quotes():
 
 @app.route("/api/graph")
 def graph():
-    return get_data_from_table()
+    return get_data_from_table(), get_bunker_prices()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

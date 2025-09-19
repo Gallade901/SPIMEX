@@ -17,8 +17,25 @@ def authorize():
     else:
         print("Authorization error:", response.text)
 
+def all_data():
+    authorize()
+    json_string = {
+        "SIDs" : sids,
+        "sort" : "asc",
+        "empty" : "skip",
+        "period" : "10Y"
+    }
+    feed = "SPIMEX_STE"
+    
+    response = session.post(f"{base_url}/api/history/{feed}", json=json_string)
+    if response.status_code == 200:
+        data = response.json()
+        return data
+
+    
 
 def get_hist_close():
+    authorize()
     json_string = {
         "SIDs" : sids,
         "sort" : "asc",

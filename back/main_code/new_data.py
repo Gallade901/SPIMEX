@@ -20,7 +20,7 @@ def get_usd_rub_rate(start_date="2024-09-14", end_date="2025-09-14"):
             rate = float(value_str)
             rates.append([date_iso, rate])
     return rates
-print(get_usd_rub_rate())
+# print(get_usd_rub_rate())
 
 # котировки из Роттердама - MGO, VLSFO, LSMGO
 def get_bunker_prices(oil_types=['MGO', 'VLSFO', 'LSMGO']):
